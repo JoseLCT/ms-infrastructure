@@ -35,6 +35,22 @@
       "arguments": {}
     },
     {
+      "name": "meal-plans",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "calendar",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
       "name": "dead-letter-exchange",
       "vhost": "/",
       "type": "fanout",
@@ -47,6 +63,10 @@
   "queues": [
     { "name": "ms-logistic-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "dead-letter-exchange" } },
     { "name": "ms-kitchen-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "dead-letter-exchange" } },
+    { "name": "ms-meal-plans-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "dead-letter-exchange" } },
+    { "name": "ms-patients-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "dead-letter-exchange" } },
+    { "name": "ms-calendar-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "dead-letter-exchange" } },
+    { "name": "ms-security-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "dead-letter-exchange" } },
 
     { "name": "dlq", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
   ],
@@ -54,8 +74,15 @@
   "bindings": [
     { "source": "patients", "vhost": "/", "destination": "ms-logistic-queue", "destination_type": "queue", "routing_key": "patient.*", "arguments": {} },
     { "source": "patients", "vhost": "/", "destination": "ms-kitchen-queue", "destination_type": "queue", "routing_key": "patient.*", "arguments": {} },
+    { "source": "patients", "vhost": "/", "destination": "ms-calendar-queue", "destination_type": "queue", "routing_key": "patient.*", "arguments": {} },
+    { "source": "patients", "vhost": "/", "destination": "ms-meal-plans-queue", "destination_type": "queue", "routing_key": "patient.*", "arguments": {} },
+    { "source": "patients", "vhost": "/", "destination": "ms-security-queue", "destination_type": "queue", "routing_key": "patient.*", "arguments": {} },
 
     { "source": "orders", "vhost": "/", "destination": "ms-logistic-queue", "destination_type": "queue", "routing_key": "order.*", "arguments": {} },
+
+    { "source": "meal-plans", "vhost": "/", "destination": "ms-patients-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
+    { "source": "meal-plans", "vhost": "/", "destination": "ms-kitchen-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
+    { "source": "meal-plans", "vhost": "/", "destination": "ms-calendar-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
 
     { "source": "dead-letter-exchange", "vhost": "/", "destination": "dlq", "destination_type": "queue", "routing_key": "", "arguments": {} }
   ]
