@@ -5,9 +5,6 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
@@ -17,16 +14,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  jaeger:
-    image: jaegertracing/all-in-one:1.58
-    container_name: jaeger
-    ports:
-      - "16686:16686"
-      - "4317:4317"
-      - "4318:4318"
-    environment:
-      COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - infra
 
   prometheus:
     image: prom/prometheus:v2.53.0
@@ -34,10 +23,75 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-remote-write-receiver"
+      - "--enable-feature=exemplars-storage"
     depends_on:
-      - jaeger
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./tempo/config.yml:/etc/tempo/config.yml:ro
+      - tempo_data:/var/tempo
+    command: ["-config.file=/etc/tempo/config.yml"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra
+
+  consul:
+    image: hashicorp/consul:1.22
+    container_name: consul
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    volumes:
+      - consul_data:/consul/data
+    command: "agent -server -bootstrap-expect=1 -ui -client=0.0.0.0"
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra
 
   grafana:
     image: grafana/grafana:11.1.0
@@ -45,27 +99,35 @@ services:
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
-      - prometheus
-      - jaeger
-
-  seq:
-    image: datalust/seq:2024.3
-    container_name: seq
-    ports:
-      - "5341:80"
-    environment:
-      ACCEPT_EULA: "Y"
-    volumes:
-      - seq_data:/data
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra
 
 volumes:
   rabbitmq_data:
   prometheus_data:
   grafana_data:
-  seq_data:
+  loki_data:
+  tempo_data:
+  consul_data:
+
+networks:
+  infra:
+    name: infrastructure
+    driver: bridge
