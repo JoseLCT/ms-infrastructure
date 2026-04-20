@@ -3,7 +3,7 @@
   "users": [
     {
       "name": "admin",
-      "password": "StrongPassword123",
+      "password": "admin",
       "tags": "administrator"
     }
   ],
