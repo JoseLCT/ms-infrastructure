@@ -91,6 +91,7 @@
     { "source": "meal-plans", "vhost": "/", "destination": "ms-patients-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
     { "source": "meal-plans", "vhost": "/", "destination": "ms-kitchen-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
     { "source": "meal-plans", "vhost": "/", "destination": "ms-calendar-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
+    { "source": "meal-plans", "vhost": "/", "destination": "ms-logistic-queue", "destination_type": "queue", "routing_key": "meal-plan.*", "arguments": {} },
 
     { "source": "calendar", "vhost": "/", "destination": "ms-logistic-queue", "destination_type": "queue", "routing_key": "calendar.*", "arguments": {} },
     { "source": "calendar", "vhost": "/", "destination": "ms-kitchen-queue", "destination_type": "queue", "routing_key": "calendar.*", "arguments": {} },
